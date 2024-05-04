@@ -12,7 +12,6 @@ from chat2api import ChatServer, Chat2API
 from chat2api.api import OpenaiAPI
 from chat2api.util import now, LRUCache, is_summary
 
-
 class WrtnAi(ChatServer):
     MODELS = ['gpt4', 'gpt3.5', 'gpt3.5_16k', 'palm2', 'gpt4v', 'gpt4t', 'wrtn_search', 'claude_instant', 'claude2.1',
               'sdxl', 'sdxl_beta', 'sdxl_jp', 'dalle3', 'haiku', 'sonnet', 'GPT4', 'GPT3.5', 'GPT3.5_16K', 'PALM2',
@@ -124,6 +123,7 @@ class WrtnAi(ChatServer):
 
     def get_message_arg(self, question, model):
         url = f'https://william.wow.wrtn.ai/chat/v3/{self.get_session_arg()}/start?platform=web&user={self.user_email}&model={model}'
+        print(url)
         headers = {
             'Authorization': 'Bearer {}'.format(self.get_access_token()),
             'Accept': 'application/json',
@@ -147,13 +147,15 @@ class WrtnAi(ChatServer):
 
     def answer_stream(self):
         question = self.client.question
-        model = self.client.model
-        if model not in self.MODELS:
-            model = 'gpt4t'
+        model = 'gpt4t'
+        print("Question:", question)
+        print("Model:", model)
+
         if is_summary(question):
             yield '闲聊'
         else:
             url = f'https://william.wow.wrtn.ai/chat/v3/{self.get_session_arg()}/{self.get_message_arg(question, model)}?model={model}&platform=web&user={self.user_email}&isChocoChip=false'
+            print(url)
             headers = {
                 'Authorization': 'Bearer {}'.format(self.get_access_token()),
                 'Accept': 'text/event-stream',
@@ -216,6 +218,7 @@ async def chat(request: Request):
     return await chat2api_server.response(request)
 
 
+
 if __name__ == '__main__':
     REFRESH_TOKEN = os.getenv('REFRESH_TOKEN')
     assert REFRESH_TOKEN, 'REFRESH_TOKEN must be set'
@@ -228,4 +231,4 @@ if __name__ == '__main__':
 
     cli = OpenaiAPI()
     chat2api_server = Chat2API(cli, WrtnAi(cli, REFRESH_TOKEN, PROXY))
-    uvicorn.run(app, host='0.0.0.0', port=5000)
+    uvicorn.run(app, host='0.0.0.0', port=5000, log_level="info")
